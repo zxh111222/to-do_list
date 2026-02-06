@@ -1,0 +1,62 @@
+{
+  "name": "glassflow-desktop",
+  "private": true,
+  "version": "0.0.0",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "clean": "powershell -Command \"Get-Process GlassFlow -ErrorAction SilentlyContinue | Stop-Process -Force; Remove-Item -Path $env:APPDATA\\glassflow-desktop -Recurse -Force -ErrorAction SilentlyContinue\"",
+    "build": "tsc && vite build && electron-builder",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.1.0",
+    "@dnd-kit/sortable": "^8.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "chrono-node": "^2.7.0",
+    "clsx": "^2.1.0",
+    "date-fns": "^3.3.1",
+    "dayjs": "^1.11.10",
+    "framer-motion": "^11.0.3",
+    "lucide-react": "^0.321.0",
+    "lunar-javascript": "^1.6.11",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "rrule": "^2.8.1",
+    "tailwind-merge": "^2.2.1",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.17",
+    "electron": "^28.2.1",
+    "electron-builder": "^24.9.1",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.9.3",
+    "vite": "^5.1.0",
+    "vite-plugin-electron": "^0.28.2",
+    "vite-plugin-electron-renderer": "^0.14.5"
+  },
+  "build": {
+    "productName": "GlassFlow",
+    "appId": "com.glassflow.desktop",
+    "directories": {
+      "output": "release-v10"
+    },
+    "files": [
+      "dist-electron/**/*",
+      "renderer-dist/**/*"
+    ],
+    "asar": true,
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "win": {
+      "target": "nsis"
+    }
+  }
+}
