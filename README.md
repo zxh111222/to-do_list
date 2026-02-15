@@ -59,10 +59,10 @@
 
 ```bash
 # 克隆项目
-git clone https://github.com/your-username/glassflow-desktop.git
+git clone https://github.com/zxh111222/to-do_list.git
 
 # 进入目录
-cd glassflow-desktop
+cd to-do_list
 
 # 安装依赖
 npm install

@@ -90,7 +90,12 @@ const MonthDay = ({ day, currentDate, events, onEventClick }: { day: Date; curre
           <div 
             key={e.id} 
             className={`text-[10px] px-2 py-0.5 rounded-full truncate w-full transition-all hover:opacity-80 font-medium
-                ${isDayToday ? 'bg-blue-500 text-white' : 'bg-emerald-500/80 text-white border border-emerald-400/20 shadow-sm'}
+                ${e.done 
+                    ? 'bg-white/10 text-white/40 border border-white/5 line-through decoration-white/30' 
+                    : isDayToday 
+                        ? 'bg-blue-500 text-white' 
+                        : 'bg-emerald-500/80 text-white border border-emerald-400/20 shadow-sm'
+                }
             `}
             title={e.title} 
             onClick={(evt) => {
@@ -138,7 +143,12 @@ const WeekDay = ({ day, events, onEventClick }: { day: Date; events: CalendarEve
             {dayEvents.map(e => (
                 <div 
                     key={e.id} 
-                    className="text-[10px] bg-emerald-500/10 border border-emerald-500/20 hover:border-emerald-500/40 rounded-lg px-2 py-1.5 break-words text-emerald-100 transition-colors cursor-pointer" 
+                    className={`text-[10px] rounded-lg px-2 py-1.5 break-words transition-colors cursor-pointer border
+                        ${e.done 
+                            ? 'bg-white/5 border-white/5 text-white/40 line-through decoration-white/30 hover:bg-white/10' 
+                            : 'bg-emerald-500/10 border-emerald-500/20 hover:border-emerald-500/40 text-emerald-100'
+                        }
+                    `}
                     title={e.title}
                     onClick={() => onEventClick(e)}
                 >

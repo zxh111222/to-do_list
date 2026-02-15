@@ -44,7 +44,7 @@
     "productName": "GlassFlow",
     "appId": "com.glassflow.desktop",
     "directories": {
-      "output": "release-v12"
+      "output": "release-v14"
     },
     "files": [
       "dist-electron/**/*",

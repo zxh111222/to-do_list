@@ -14,6 +14,7 @@ export interface CalendarEvent {
   date: Date;
   type: 'todo' | 'event';
   todoId?: string;
+  done?: boolean;
 }
 
 export interface Note {
@@ -79,7 +80,8 @@ export const useAppStore = create<AppState>()(
                  title: text,
                  date: dueDate,
                  type: 'todo',
-                 todoId: newTodo.id
+                 todoId: newTodo.id,
+                 done: false
              });
         }
 
@@ -90,7 +92,8 @@ export const useAppStore = create<AppState>()(
       }),
 
       toggleTodo: (id) => set((state) => ({
-        todos: state.todos.map((t) => t.id === id ? { ...t, done: !t.done } : t)
+        todos: state.todos.map((t) => t.id === id ? { ...t, done: !t.done } : t),
+        events: state.events.map((e) => e.todoId === id ? { ...e, done: !e.done } : e)
       })),
 
       removeTodo: (id) => set((state) => ({
@@ -112,7 +115,8 @@ export const useAppStore = create<AppState>()(
             title: todo.text,
             date: date,
             type: 'todo',
-            todoId: todo.id
+            todoId: todo.id,
+            done: todo.done
           }],
           todos: state.todos.map(t => t.id === todoId ? { ...t, dueDate: date } : t)
         };
