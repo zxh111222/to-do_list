@@ -69,7 +69,7 @@ export const NotesWidget = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-2 gap-3 content-start pr-1 -mr-2 pl-1 pb-2">
+      <div className="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-2 gap-3 content-start pr-1 -mr-2 pl-1 pb-2" style={{ maxHeight: 'calc(100% - 60px)' }}>
         <AnimatePresence mode="popLayout">
           {notes.map((note) => (
             <NoteItem key={note.id} note={note} />

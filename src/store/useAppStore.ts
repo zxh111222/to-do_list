@@ -39,6 +39,7 @@ interface AppState {
   addTodo: (text: string, dueDate?: Date) => void;
   toggleTodo: (id: string) => void;
   removeTodo: (id: string) => void;
+  updateTodo: (id: string, text: string, dueDate?: Date) => void;
   
   addEvent: (event: Omit<CalendarEvent, 'id'>) => void;
   convertTodoToEvent: (todoId: string, date: Date) => void;
@@ -64,10 +65,10 @@ export const useAppStore = create<AppState>()(
       notes: [
         { id: '1', content: 'Meeting notes: Discuss API integration', color: 'bg-yellow-200/80', createdAt: Date.now() }
       ],
-      opacity: 0.6,
+      opacity: 0.85,
       weatherCity: '厦门市',
 
-      setOpacity: (opacity) => set(() => ({ opacity })),
+      setOpacity: (opacity) => set(() => ({ opacity: Math.max(0.3, opacity) })),
       setWeatherCity: (city) => set(() => ({ weatherCity: city })),
 
       addTodo: (text, dueDate) => set((state) => {
@@ -99,6 +100,11 @@ export const useAppStore = create<AppState>()(
       removeTodo: (id) => set((state) => ({
         todos: state.todos.filter((t) => t.id !== id),
         events: state.events.filter((e) => e.todoId !== id)
+      })),
+
+      updateTodo: (id, text, dueDate) => set((state) => ({
+        todos: state.todos.map((t) => t.id === id ? { ...t, text, dueDate } : t),
+        events: state.events.map((e) => e.todoId === id ? { ...e, title: text, dueDate } : e)
       })),
 
       addEvent: (event) => set((state) => ({

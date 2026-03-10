@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard } from '../../components/GlassCard';
-import { Plus, Check, Trash2, GripVertical, Calendar as CalendarIcon, Clock, ChevronRight } from 'lucide-react';
+import { Plus, Check, Trash2, GripVertical, Calendar as CalendarIcon, Clock, ChevronRight, Edit2, Save, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore, Todo } from '../../store/useAppStore';
 import { useDraggable } from '@dnd-kit/core';
@@ -10,7 +10,9 @@ import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 
 const DraggableTodoItem = React.forwardRef<HTMLDivElement, { todo: Todo }>(({ todo }, ref) => {
-  const { toggleTodo, removeTodo } = useAppStore();
+  const { toggleTodo, removeTodo, updateTodo } = useAppStore();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(todo.text);
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: `todo-${todo.id}`,
     data: { type: 'todo', id: todo.id, text: todo.text, dueDate: todo.dueDate }
@@ -27,6 +29,18 @@ const DraggableTodoItem = React.forwardRef<HTMLDivElement, { todo: Todo }>(({ to
     } else if (ref) {
       ref.current = node;
     }
+  };
+
+  const handleSaveEdit = () => {
+    if (editText.trim()) {
+      updateTodo(todo.id, editText.trim(), todo.dueDate);
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditText(todo.text);
+    setIsEditing(false);
   };
 
   return (
@@ -54,23 +68,66 @@ const DraggableTodoItem = React.forwardRef<HTMLDivElement, { todo: Todo }>(({ to
       </button>
       
       <div className="flex-1 min-w-0 flex flex-col">
-          <span className={`text-sm truncate transition-all duration-300 ${todo.done ? 'text-white/30 line-through' : 'text-white/90 font-medium'}`}>
-            {todo.text}
-          </span>
-          {todo.dueDate && (
-            <span className={`text-[10px] flex items-center gap-1 mt-0.5 ${todo.done ? 'text-white/20' : 'text-blue-300/80'}`}>
-                <CalendarIcon size={10} />
-                {format(new Date(todo.dueDate), 'MMM d, HH:mm')}
-            </span>
+          {isEditing ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveEdit();
+                  if (e.key === 'Escape') handleCancelEdit();
+                }}
+                className="flex-1 bg-black/30 border border-white/20 rounded-lg px-2 py-1 text-sm text-white focus:outline-none focus:border-white/40"
+                autoFocus
+              />
+              <button
+                onClick={handleSaveEdit}
+                className="p-1 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10 rounded"
+              >
+                <Save size={14} />
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <>
+              <span 
+                className={`text-sm truncate transition-all duration-300 cursor-pointer hover:text-blue-200 ${todo.done ? 'text-white/30 line-through' : 'text-white/90 font-medium'}`}
+                onClick={() => !todo.done && setIsEditing(true)}
+              >
+                {todo.text}
+              </span>
+              {todo.dueDate && (
+                <span className={`text-[10px] flex items-center gap-1 mt-0.5 ${todo.done ? 'text-white/20' : 'text-blue-300/80'}`}>
+                    <CalendarIcon size={10} />
+                    {format(new Date(todo.dueDate), 'MMM d, HH:mm')}
+                </span>
+              )}
+            </>
           )}
       </div>
 
-      <button 
-        onClick={() => removeTodo(todo.id)}
-        className="text-white/20 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-all duration-300 flex-shrink-0 p-1 hover:bg-rose-400/10 rounded-lg"
-      >
-        <Trash2 size={14} />
-      </button>
+      {!isEditing && (
+        <>
+          <button 
+            onClick={() => setIsEditing(true)}
+            className="text-white/20 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all duration-300 flex-shrink-0 p-1 hover:bg-blue-400/10 rounded-lg"
+          >
+            <Edit2 size={14} />
+          </button>
+          <button 
+            onClick={() => removeTodo(todo.id)}
+            className="text-white/20 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-all duration-300 flex-shrink-0 p-1 hover:bg-rose-400/10 rounded-lg"
+          >
+            <Trash2 size={14} />
+          </button>
+        </>
+      )}
     </motion.div>
   );
 });
@@ -121,14 +178,14 @@ export const TodoWidget = () => {
           </span>
         </div>
 
-        <form onSubmit={handleSubmit} className="mb-6 relative z-20 pointer-events-auto">
+        <form onSubmit={handleSubmit} className="mb-6 relative z-30">
         <div className="relative group">
             <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="添加新任务 (例如：明天下午3点开会)..."
-            className="w-full bg-black/20 border border-white/10 rounded-2xl py-3 pl-4 pr-10 text-sm text-white placeholder-white/30 focus:outline-none focus:bg-black/30 focus:border-white/20 focus:ring-1 focus:ring-white/10 transition-all duration-300 shadow-inner"
+            className="w-full bg-black/20 border border-white/10 rounded-2xl py-3 pl-4 pr-10 text-sm text-white placeholder-white/30 focus:outline-none focus:bg-black/30 focus:border-white/20 focus:ring-1 focus:ring-white/10 transition-all duration-300 shadow-inner pointer-events-auto"
             />
             <button 
                 type="submit" 

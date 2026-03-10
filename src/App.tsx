@@ -192,7 +192,7 @@ function App() {
                                                         <input 
                                                             type="range" 
                                                             min="0.1" 
-                                                            max="0.9" 
+                                                            max="1" 
                                                             step="0.05"
                                                             value={opacity} 
                                                             onChange={(e) => setOpacity(parseFloat(e.target.value))}

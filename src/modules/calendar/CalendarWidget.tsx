@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { GlassCard } from '../../components/GlassCard';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, List, LayoutGrid, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, List, LayoutGrid, X, ChevronDown } from 'lucide-react';
 import { 
   format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, 
   isToday, isSameDay, startOfWeek, endOfWeek, addMonths, subMonths, 
-  addWeeks, subWeeks 
+  addWeeks, subWeeks, startOfDay, endOfDay
 } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { useDroppable } from '@dnd-kit/core';
@@ -72,21 +72,16 @@ const MonthDay = ({ day, currentDate, events, onEventClick }: { day: Date; curre
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[100px] flex flex-col items-start p-2 rounded-2xl text-sm relative group cursor-pointer transition-all duration-300 border border-transparent overflow-hidden
+      className={`min-h-[100px] flex flex-col items-start p-2 rounded-2xl text-sm relative group cursor-pointer transition-all duration-300 border border-transparent
         ${!isCurrentMonth ? 'bg-white/[0.02] text-white/20' : 'bg-white/5 text-white/80 hover:bg-white/10 hover:border-white/5'}
         ${isDayToday ? 'ring-2 ring-blue-500/50 bg-blue-500/10' : ''}
         ${isOver ? 'bg-white/20 border-white/40 scale-105 z-10 ring-2 ring-blue-400/50' : ''}
       `}
-      onClick={() => {
-        if (dayEvents.length > 0) {
-            onEventClick(dayEvents[0]);
-        }
-      }}
     >
       <span className={`text-sm font-bold mb-1.5 ${isDayToday ? 'text-blue-400' : 'opacity-50'}`}>{format(day, 'd')}</span>
       
-      <div className="flex flex-col gap-1 w-full overflow-hidden">
-        {dayEvents.slice(0, 4).map((e) => (
+      <div className="flex flex-col gap-1 w-full overflow-y-auto custom-scrollbar" style={{ maxHeight: '80px' }}>
+        {dayEvents.slice(0, 2).map((e) => (
           <div 
             key={e.id} 
             className={`text-[10px] px-2 py-0.5 rounded-full truncate w-full transition-all hover:opacity-80 font-medium
@@ -106,10 +101,10 @@ const MonthDay = ({ day, currentDate, events, onEventClick }: { day: Date; curre
             {e.title}
           </div>
         ))}
-        {dayEvents.length > 4 && (
-            <div className="text-[9px] text-white/40 px-1 font-medium">
-                +{dayEvents.length - 4} 更多
-            </div>
+        {dayEvents.length > 2 && (
+          <div className="text-[9px] text-white/40 px-1 font-medium">
+            +{dayEvents.length - 2} 更多
+          </div>
         )}
       </div>
     </div>
@@ -184,7 +179,9 @@ export const CalendarWidget = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewMode>('month');
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const { events } = useAppStore();
+  const [agendaRange, setAgendaRange] = useState<'today' | 'week' | 'custom'>('week');
+  const [showRangePicker, setShowRangePicker] = useState(false);
+  const [customRange, setCustomRange] = useState({ start: new Date(), end: new Date() });
 
   const handlePrev = () => {
       if (view === 'month') setCurrentDate(subMonths(currentDate, 1));
@@ -217,21 +214,112 @@ export const CalendarWidget = () => {
       });
   }
   
-  // For Agenda, we filter upcoming events from currentDate
+  const { events } = useAppStore();
+
+  // For Agenda, filter events based on selected range
+  const getAgendaDateRange = () => {
+    const now = new Date();
+    switch (agendaRange) {
+      case 'today':
+        return { start: startOfDay(now), end: endOfDay(now) };
+      case 'week':
+        return { start: startOfWeek(now), end: endOfWeek(now) };
+      case 'custom':
+        return customRange;
+      default:
+        return { start: startOfWeek(now), end: endOfWeek(now) };
+    }
+  };
+  
   const agendaEvents = view === 'agenda' 
       ? events
-          .filter(e => new Date(e.date) >= new Date(currentDate.setHours(0,0,0,0)))
+          .filter(e => {
+            const eventDate = new Date(e.date);
+            const range = getAgendaDateRange();
+            return eventDate >= range.start && eventDate <= range.end;
+          })
           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-          .slice(0, 10) // Show next 10 events
+          .slice(0, 20)
       : [];
 
   return (
     <GlassCard className="flex flex-col h-full !p-6 relative">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
-            {view === 'agenda' ? '日程列表' : format(currentDate, view === 'week' ? 'yyyy年 MMM' : 'yyyy年 MMMM', { locale: zhCN })}
-        </h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
+              {view === 'agenda' ? '日程列表' : format(currentDate, view === 'week' ? 'yyyy年 MMM' : 'yyyy年M月', { locale: zhCN })}
+          </h2>
+          
+          {/* Agenda Range Selector */}
+          {view === 'agenda' && (
+            <div className="relative flex items-center gap-2">
+              <button 
+                onClick={() => setShowRangePicker(!showRangePicker)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-black/20 hover:bg-black/30 rounded-lg border border-white/5 text-sm text-white/70 transition-all"
+              >
+                <span>
+                  {agendaRange === 'today' ? '今天' : 
+                   agendaRange === 'week' ? '本周' : 
+                   agendaRange === 'custom' ? '自定义' : '本周'}
+                </span>
+                <ChevronDown size={14} className={`transition-transform ${showRangePicker ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showRangePicker && (
+                <div className="absolute top-full left-0 mt-2 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl p-2 shadow-2xl z-50 min-w-[140px]">
+                  {[
+                    { key: 'today', label: '今天' },
+                    { key: 'week', label: '本周' },
+                    { key: 'custom', label: '自定义' }
+                  ].map((item) => (
+                    <button
+                      key={item.key}
+                      onClick={() => {
+                        if (item.key === 'custom') {
+                          // Set custom range to next 7 days by default
+                          const today = new Date();
+                          setCustomRange({ 
+                            start: today, 
+                            end: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000) 
+                          });
+                        }
+                        setAgendaRange(item.key as typeof agendaRange);
+                        setShowRangePicker(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
+                        agendaRange === item.key 
+                          ? 'bg-white/20 text-white' 
+                          : 'text-white/60 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {/* Custom date inputs */}
+              {agendaRange === 'custom' && (
+                <div className="flex items-center gap-1">
+                  <input 
+                    type="date" 
+                    value={format(customRange.start, 'yyyy-MM-dd')}
+                    onChange={(e) => setCustomRange(prev => ({ ...prev, start: new Date(e.target.value) }))}
+                    className="bg-black/20 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                  />
+                  <span className="text-white/40">-</span>
+                  <input 
+                    type="date" 
+                    value={format(customRange.end, 'yyyy-MM-dd')}
+                    onChange={(e) => setCustomRange(prev => ({ ...prev, end: new Date(e.target.value) }))}
+                    className="bg-black/20 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         
         <div className="flex items-center gap-3">
             <div className="flex bg-black/20 rounded-xl p-1 border border-white/5">
@@ -258,10 +346,12 @@ export const CalendarWidget = () => {
                 </button>
             </div>
 
-            <div className="flex gap-1 bg-black/20 rounded-xl p-1 border border-white/5">
-                <button onClick={handlePrev} className="p-1.5 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-all"><ChevronLeft size={16} /></button>
-                <button onClick={handleNext} className="p-1.5 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-all"><ChevronRight size={16} /></button>
-            </div>
+            {view !== 'agenda' && (
+                <div className="flex gap-1 bg-black/20 rounded-xl p-1 border border-white/5">
+                    <button onClick={handlePrev} className="p-1.5 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-all"><ChevronLeft size={16} /></button>
+                    <button onClick={handleNext} className="p-1.5 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-all"><ChevronRight size={16} /></button>
+                </div>
+            )}
         </div>
       </div>
       
@@ -269,10 +359,10 @@ export const CalendarWidget = () => {
       <div className="flex-1 overflow-hidden flex flex-col">
         {view === 'month' && (
             <>
-                <div className="grid grid-cols-7 gap-2 text-center text-[10px] mb-3 text-white/40 font-bold uppercase tracking-widest">
+                <div className="grid grid-cols-7 gap-2 text-center text-[10px] mb-3 text-white/40 font-bold uppercase tracking-widest flex-shrink-0">
                     {['日', '一', '二', '三', '四', '五', '六'].map(d => <div key={d}>{d}</div>)}
                 </div>
-                <div className="grid grid-cols-7 gap-2 flex-1 overflow-y-auto custom-scrollbar content-start pr-1 pb-2">
+                <div className="grid grid-cols-7 gap-2 flex-1 overflow-y-auto custom-scrollbar content-start pr-1 pb-2" style={{ maxHeight: 'calc(100% - 30px)' }}>
                     {days.map((day) => (
                         <MonthDay 
                             key={day.toISOString()} 
